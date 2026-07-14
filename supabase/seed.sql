@@ -1,0 +1,2 @@
+-- Local dev fake data only. Fixed/reference data (e.g. the stages table)
+-- belongs in a migration, not here — see 00000000000002_seed_stages.sql.
