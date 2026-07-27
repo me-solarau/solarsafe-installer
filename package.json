@@ -1,0 +1,21 @@
+{
+  "name": "solarsafe-installer",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Solarsafe Installer — stage-gate photo verification for grid-connected rooftop PV",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/dashboard",
+    "dev:dashboard": "npm run dev --workspace apps/dashboard",
+    "dev:installer": "npm run dev --workspace apps/installer",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
