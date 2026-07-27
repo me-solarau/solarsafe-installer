@@ -38,7 +38,7 @@ export function LeadForm() {
       form.reset();
     } catch {
       setStatus('error');
-      setMessage('Something went wrong. Email hello@solarsafe.installer and we\'ll sort it.');
+      setMessage('Something went wrong. Email hello@solarsearch.com.au and we\'ll sort it.');
     }
   }
 
