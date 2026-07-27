@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
+import { deliverLead, type Lead } from '@/lib/leads';
 
 /**
  * Lead capture endpoint for the marketing site's "Book a demo" form.
  *
- * v1 (this scaffold): validates the payload and logs it server-side so the
- * form is functional end-to-end. Wiring to a CRM / Slack / email (or a
- * Supabase `leads` table) is a follow-up — deliberately kept out of the
- * evidence schema, since marketing leads are not job evidence.
+ * Pipeline: validate → spam guard (honeypot) → deliver to configured sinks
+ * (Supabase table + Resend email + Kudosity SMS). Sinks are best-effort and
+ * independent; the lead is accepted as long as at least one sink takes it
+ * (or none is configured, in local dev).
  */
+
+export const runtime = 'nodejs';
 
 interface LeadPayload {
   name?: string;
@@ -15,9 +18,16 @@ interface LeadPayload {
   company?: string;
   crews?: string;
   notes?: string;
+  // honeypot — real users never fill this; bots do.
+  company_website?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  referer?: string;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const clip = (s: string | undefined, max: number) => s?.trim().slice(0, max) || undefined;
 
 export async function POST(request: Request) {
   let body: LeadPayload;
@@ -27,9 +37,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const name = body.name?.trim();
-  const email = body.email?.trim();
-  const company = body.company?.trim();
+  // Honeypot: silently accept and drop so bots get no signal.
+  if (body.company_website && body.company_website.trim() !== '') {
+    return NextResponse.json({ ok: true }, { status: 201 });
+  }
+
+  const name = clip(body.name, 120);
+  const email = clip(body.email, 200);
+  const company = clip(body.company, 160);
 
   if (!name || !company || !email || !EMAIL_RE.test(email)) {
     return NextResponse.json(
@@ -38,18 +53,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const lead = {
+  const lead: Lead = {
     name,
     email,
     company,
-    crews: body.crews?.trim() || null,
-    notes: body.notes?.trim() || null,
-    received_at: new Date().toISOString(),
+    crews: clip(body.crews, 40) ?? null,
+    notes: clip(body.notes, 2000) ?? null,
     source: 'marketing_site',
+    utm_source: clip(body.utm_source, 120) ?? null,
+    utm_medium: clip(body.utm_medium, 120) ?? null,
+    utm_campaign: clip(body.utm_campaign, 120) ?? null,
+    referer: clip(body.referer, 500) ?? request.headers.get('referer') ?? null,
   };
 
-  // TODO(phase-1): persist to a CRM / notify sales. For now, server log only.
-  console.info('[lead] new demo request', lead);
+  const result = await deliverLead(lead);
+
+  if (!result.delivered) {
+    console.error('[lead] delivery failed', result.errors);
+    return NextResponse.json({ error: 'Could not record your request' }, { status: 502 });
+  }
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

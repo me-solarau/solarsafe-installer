@@ -16,6 +16,16 @@ export function LeadForm() {
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
 
+    // Attribution: capture UTM params + referrer so sales knows the channel.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      for (const key of ['utm_source', 'utm_medium', 'utm_campaign']) {
+        const v = params.get(key);
+        if (v) (data as Record<string, string>)[key] = v;
+      }
+      if (document.referrer) (data as Record<string, string>).referer = document.referrer;
+    }
+
     try {
       const res = await fetch('/api/leads', {
         method: 'POST',
@@ -46,6 +56,11 @@ export function LeadForm() {
 
   return (
     <form onSubmit={onSubmit} className="card grid gap-4" noValidate>
+      {/* Honeypot — hidden from humans, tempting to bots. Leave it empty. */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}>
+        <label htmlFor="company_website">Company website</label>
+        <input id="company_website" name="company_website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Full name" name="name" autoComplete="name" required />
         <Field label="Work email" name="email" type="email" autoComplete="email" required />
