@@ -41,7 +41,7 @@ async function persist(lead: Lead, errors: string[]): Promise<boolean> {
 
   try {
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
-    const { error } = await supabase.from('leads').insert({
+    const { error } = await supabase.from('demo_requests').insert({
       name: lead.name,
       email: lead.email,
       company: lead.company,
