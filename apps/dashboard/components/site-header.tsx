@@ -26,7 +26,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="hidden text-sm font-semibold text-ink-700 hover:text-ink-900 sm:inline">
+          <Link href="/login" className="hidden text-sm font-semibold text-ink-700 hover:text-ink-900 sm:inline">
             Sign in
           </Link>
           <Link href="/#demo" className="btn-primary">
